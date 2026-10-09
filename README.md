@@ -7,7 +7,7 @@ download as PDF or JSON.
 
 > **For authorized testing and education only.** Read [SECURITY.md](SECURITY.md) before use.
 
-<!-- Add your screenshots to docs/screenshots/ and update these paths -->
+> **License:** All Rights Reserved. The code is viewable for evaluation only; see [LICENSE](LICENSE).
 
 ![Dashboard](docs/screenshots/dashboard.png)
 ![Report](docs/screenshots/report.png)
@@ -120,11 +120,9 @@ webrecon/
 - [ ] CVE lookup through the NVD API
 - [ ] Scan history and comparison (SQLite)
 
-## Contributing
-
-Issues and pull requests are welcome. Please keep changes focused and
-describe how you tested them.
-
 ## License
 
-[MIT](LICENSE)
+Copyright (c) 2026 Noor Alshamasneh. All Rights Reserved.
+
+The source code is publicly visible for viewing and evaluation only. Using,
+copying, modifying or distributing it requires written permission. See [LICENSE](LICENSE).
