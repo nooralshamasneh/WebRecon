@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRecon - Web Security Reconnaissance</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b090c; color: #fceade; padding: 20px; }
+        .container { max-width: 950px; margin: 0 auto; background: #141118; padding: 35px; border-radius: 15px;
+            box-shadow: 0 0 25px rgba(255, 105, 180, 0.15); border: 1px solid rgba(255, 105, 180, 0.3); }
+        h1 { text-align: center; color: #ff69b4; text-shadow: 0 0 12px rgba(255, 105, 180, 0.6);
+            font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; font-size: 2.5em; }
+        .form-group { text-align: center; margin-bottom: 30px; }
+        input[type="text"] { padding: 12px 15px; width: 65%; font-size: 16px; background: #1a1621; border: 1px solid #ff69b4;
+            color: #fff; border-radius: 8px; outline: none; transition: 0.3s; }
+        input[type="text"]:focus { box-shadow: 0 0 10px #ff69b4; border-color: #ff1493; }
+        button, .btn { display: inline-block; padding: 12px 20px; font-size: 15px; background: linear-gradient(135deg, #ff69b4, #ff1493);
+            color: white; border: none; cursor: pointer; border-radius: 8px; font-weight: bold; text-decoration: none;
+            transition: 0.3s; box-shadow: 0 0 10px rgba(255, 105, 180, 0.4); margin: 5px 4px 0; }
+        button:hover, .btn:hover { background: linear-gradient(135deg, #ff1493, #c71585); box-shadow: 0 0 18px #ff69b4; }
+        button:focus-visible, .btn:focus-visible, input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        .consent { display: block; margin-top: 14px; font-size: 14px; color: #f7d6e0; }
+        .error { background: #2a1020; border: 1px solid #ff1493; color: #ffb3d1; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; }
+        .disclaimer { font-size: 12px; color: #a98a9a; text-align: center; margin-top: 25px; }
+        .grade-box { background: linear-gradient(135deg, #1a121f, #261726); border: 2px solid #ff69b4; padding: 20px;
+            border-radius: 10px; text-align: center; margin-bottom: 25px; box-shadow: 0 0 15px rgba(255, 105, 180, 0.2); }
+        .grade-box h2 { color: #ff69b4; margin: 0 0 10px 0; font-family: 'Courier New', Courier, monospace; }
+        .grade-box p { font-size: 1.2em; font-weight: bold; color: #ff9ebb; margin: 0; }
+        .chart-container { width: 280px; height: 280px; margin: 0 auto 25px auto; background: #100d13; padding: 15px;
+            border-radius: 12px; border: 1px solid rgba(255, 105, 180, 0.2); }
+        .section { margin-bottom: 25px; border-bottom: 1px dashed rgba(255, 105, 180, 0.3); padding-bottom: 20px; }
+        .section h2 { font-size: 1.3em; color: #ff8da1; font-family: 'Courier New', Courier, monospace; }
+        pre { background: #0d0b0f; color: #ff9ebb; padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 105, 180, 0.2);
+            overflow-x: auto; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 14px; }
+        ul { padding-left: 20px; color: #f7d6e0; }
+        li { margin-bottom: 6px; font-family: 'Consolas', monospace; }
+        small { color: #a98a9a; }
+        .sev-critical { color: #ff4d4d; } .sev-medium { color: #ffb347; } .sev-info { color: #f7d6e0; }
+        .fix-box { background: #19121a; border-left: 4px solid #ff1493; padding: 10px 15px; margin-top: 8px; border-radius: 0 8px 8px 0; }
+        .loading { display: none; text-align: center; font-style: italic; color: #ff9ebb; font-family: 'Courier New', Courier, monospace; margin-bottom: 20px; }
+    </style>
+    <script>
+        function showLoader() { document.getElementById('loader').style.display = 'block'; }
+        function copyResults() {
+            const text = "WebRecon scan target: " + {{ (results.target if results else '')|tojson }};
+            navigator.clipboard.writeText(text).then(function () { alert("Copied."); });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>WebRecon</h1>
+
+        {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+
+        <div class="form-group">
+            <form method="POST" onsubmit="showLoader()">
+                <input type="text" name="target" placeholder="Domain or IP (e.g., scanme.nmap.org)" required
+                    value="{{ target or '' }}">
+                <button type="submit">Run scan</button>
+                <label class="consent">
+                    <input type="checkbox" name="consent" required>
+                    I own this target or have written permission to test it.
+                </label>
+            </form>
+        </div>
+
+        <div id="loader" class="loading"><p>Scanning. This can take a few minutes.</p></div>
+
+        {% if results %}
+        <div id="results">
+            <div class="grade-box">
+                <h2>Security posture</h2>
+                <p>Grade: {{ results.security_grade }} | Score: {{ results.security_score }}/100 (higher is better)</p>
+            </div>
+
+            <div class="chart-container"><canvas id="riskChart"></canvas></div>
+            <script>
+                const score = {{ results.security_score|tojson }};
+                new Chart(document.getElementById('riskChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Security score', 'Points lost'],
+                        datasets: [{ data: [score, 100 - score], backgroundColor: ['#ff69b4', '#361c33'],
+                            borderColor: ['#ff1493', '#ff69b4'], borderWidth: 1 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#fceade', font: { family: 'Courier New', size: 11 } } } } }
+                });
+            </script>
+
+            <div class="section">
+                <h2>Target</h2>
+                <p><strong>Target:</strong> {{ results.target }}</p>
+                <p><strong>Type:</strong> {{ 'IP address' if results.is_ip else 'Domain name' }}</p>
+                <p><strong>Scanned:</strong> {{ results.scan_time }}</p>
+                {% for n in results.notes %}<p><small>Note: {{ n }}</small></p>{% endfor %}
+            </div>
+
+            <div class="section">
+                <h2>How the score was calculated</h2>
+                {% if results.score_breakdown %}
+                <ul>{% for b in results.score_breakdown %}<li>-{{ b.points }}: {{ b.reason }}</li>{% endfor %}</ul>
+                {% else %}<p>No deductions.</p>{% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Technologies</h2>
+                <ul>{% for tech in results.technologies %}<li>{{ tech }}</li>{% endfor %}</ul>
+            </div>
+
+            <div class="section">
+                <h2>Risk notes (heuristic)</h2>
+                {% if results.risk_notes %}
+                <ul>{% for n in results.risk_notes %}<li>{{ n }}</li>{% endfor %}</ul>
+                {% else %}<p>No risk notes for the detected stack.</p>{% endif %}
+                <p><small>These are hints based on detected software, not confirmed vulnerabilities.</small></p>
+            </div>
+
+            <div class="section">
+                <h2>Remediations</h2>
+                {% for rem in results.remediations %}
+                <div class="fix-box">
+                    <p style="margin: 0 0 5px 0; color: #ff9ebb;"><strong>{{ rem.header }}</strong></p>
+                    <code style="color: #fff; font-size: 13px;">{{ rem.fix }}</code>
+                </div>
+                {% else %}<p>No fixes needed for the checks performed.</p>{% endfor %}
+            </div>
+
+            <div class="section">
+                <h2>Open ports</h2>
+                {% if results.open_ports %}
+                <p><strong>Ports found:</strong> {{ results.open_ports|join(', ') }}</p>
+                {% else %}<p>No open ports found.</p>{% endif %}
+                {% if results.service_info %}<pre>{{ results.service_info }}</pre>{% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Exposed paths</h2>
+                {% if results.sensitive_paths %}
+                <ul>{% for p in results.sensitive_paths %}
+                    <li class="sev-{{ p.severity }}">{{ p.path }} ({{ p.status }}): {{ p.note }}</li>
+                {% endfor %}</ul>
+                {% else %}<p>No exposed paths found.</p>{% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Security headers</h2>
+                {% if results.security_headers %}
+                <ul>{% for h in results.security_headers %}
+                    <li>{{ {'ok': '✔', 'missing': '✖', 'leak': '⚠', 'info': 'ℹ'}[h.status] }}
+                        {{ h.name }}: {{ h.value or 'Missing' }} <small>({{ h.description }})</small></li>
+                {% endfor %}</ul>
+                {% else %}<p>No headers analysed.</p>{% endif %}
+            </div>
+
+            {% if not results.is_ip %}
+            <div class="section"><h2>DNS records</h2><pre>{{ results.dns_records }}</pre></div>
+            <div class="section"><h2>WHOIS</h2><pre>{{ results.whois }}</pre></div>
+
+            <div class="section">
+                <h2>Subdomains ({{ results.subdomains|length }})</h2>
+                {% if results.subdomains %}
+                <ul>{% for sub in results.subdomains %}<li>{{ sub }}</li>{% endfor %}</ul>
+                {% else %}<p>No subdomains found.</p>{% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Emails ({{ results.emails|length }})</h2>
+                {% if results.emails %}
+                <ul>{% for email in results.emails %}<li>{{ email }}</li>{% endfor %}</ul>
+                {% else %}<p>No emails found.</p>{% endif %}
+            </div>
+            {% endif %}
+
+            <div style="text-align: center; margin-top: 30px;">
+                <a class="btn" href="{{ url_for('export_pdf', scan_id=results.scan_id) }}">Download PDF</a>
+                <a class="btn" href="{{ url_for('export_json', scan_id=results.scan_id) }}"
+                    style="background: linear-gradient(135deg, #c71585, #8b008b);">Export JSON</a>
+                <button type="button" onclick="copyResults()"
+                    style="background: linear-gradient(135deg, #db7093, #c71585);">Copy target</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <p class="disclaimer">WebRecon is for authorized security testing and education only.
+            Scanning systems you do not own or have permission to test may be illegal.</p>
+    </div>
+</body>
+
+</html>

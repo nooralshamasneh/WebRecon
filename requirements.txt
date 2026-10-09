@@ -1,0 +1,5 @@
+flask>=3.0
+requests>=2.31
+python-whois>=0.9
+dnspython>=2.4
+reportlab>=4.0
