@@ -36,7 +36,7 @@ download as PDF or JSON.
 ### Run locally
 
 ```bash
-git clone https://github.com/<your-username>/webrecon.git
+git clone https://github.com/nooralshamasneh/webrecon.git
 cd webrecon
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
