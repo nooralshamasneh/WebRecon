@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Audit log - WebRecon{% endblock %}
+{% block content %}
+<section class="card"><h1>Audit log</h1>
+<div class="scroll"><table>
+  <thead><tr><th>Time (UTC)</th><th>User</th><th>IP</th><th>Action</th><th>Detail</th></tr></thead>
+  <tbody>{% for e in entries %}<tr><td>{{ e.ts }}</td><td>{{ e.username or '-' }}</td><td>{{ e.ip or '-' }}</td><td>{{ e.action }}</td><td>{{ e.detail }}</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% endblock %}

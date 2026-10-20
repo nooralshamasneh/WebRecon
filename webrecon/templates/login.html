@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Sign in - WebRecon{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Sign in</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Username <input type="text" name="username" autocomplete="username" required autofocus></label>
+    <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+    <button type="submit">Sign in</button>
+  </form>
+  <p class="muted">Accounts are created by an administrator: <code>flask --app webrecon create-user NAME</code></p>
+</section>
+{% endblock %}

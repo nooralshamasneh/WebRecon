@@ -1,0 +1,15 @@
+services:
+  webrecon:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"      # bind to localhost; put a TLS reverse proxy in front for remote access
+    environment:
+      WEBRECON_ADMIN_USER: ${WEBRECON_ADMIN_USER:-admin}
+      WEBRECON_ADMIN_PASSWORD: ${WEBRECON_ADMIN_PASSWORD:?set WEBRECON_ADMIN_PASSWORD (min 12 chars) in .env}
+      WEBRECON_HTTPS: ${WEBRECON_HTTPS:-0}
+      NVD_API_KEY: ${NVD_API_KEY:-}
+    volumes:
+      - webrecon-data:/data
+    restart: unless-stopped
+volumes:
+  webrecon-data:

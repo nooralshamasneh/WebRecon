@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Compare scans - WebRecon{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Compare two scans</h1>
+  <form method="get" class="row">
+    <select name="a" required aria-label="First scan">{% for s in scans %}<option value="{{ s['id'] }}">{{ s['target'] }} - {{ s['created_at'] }} ({{ s['grade'] }})</option>{% endfor %}</select>
+    <select name="b" required aria-label="Second scan">{% for s in scans %}<option value="{{ s['id'] }}">{{ s['target'] }} - {{ s['created_at'] }} ({{ s['grade'] }})</option>{% endfor %}</select>
+    <button type="submit">Compare</button>
+  </form>
+</section>
+{% if diff %}
+<section class="card">
+  <h2>{{ diff.target.a }} {% if diff.target.a != diff.target.b %}vs {{ diff.target.b }}{% endif %}</h2>
+  <p>Grade {{ diff.grade.a }} &rarr; <strong>{{ diff.grade.b }}</strong>; score {{ diff.score.a if diff.score.a is not none else 'N/A' }} &rarr;
+    <strong>{{ diff.score.b if diff.score.b is not none else 'N/A' }}</strong>
+    {% if diff.score.delta is not none %}({{ '%+d' % diff.score.delta }}){% endif %}</p>
+  {% macro block(title, items) %}
+    <h3>{{ title }} ({{ items|length }})</h3>
+    {% if items %}<ul>{% for f in items %}<li><span class="badge sev-{{ f.severity }}">{{ f.severity }}</span> {{ f.title }} <code>{{ f.id }}</code></li>{% endfor %}</ul>{% else %}<p class="muted">None</p>{% endif %}
+  {% endmacro %}
+  {{ block('New findings', diff.new_findings) }}
+  {{ block('Resolved findings', diff.resolved_findings) }}
+  {{ block('Unchanged findings', diff.unchanged_findings) }}
+  <h3>Ports</h3>
+  <p>Opened: {{ diff.ports.opened|join(', ') or 'none' }}. Closed: {{ diff.ports.closed|join(', ') or 'none' }}.</p>
+  <h3>Subdomains</h3>
+  <p>Added: {{ diff.subdomains.added|join(', ') or 'none' }}. Removed: {{ diff.subdomains.removed|join(', ') or 'none' }}.</p>
+</section>
+{% endif %}
+{% endblock %}

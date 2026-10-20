@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ scan['target'] }} - WebRecon{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ scan['target'] }}</h1>
+  <p class="muted">Scan {{ scan['id'] }} &middot; queued {{ scan['created_at'] }} UTC &middot; status: <strong>{{ scan['status'] }}</strong></p>
+
+  {% if scan['status'] in ('queued', 'running') %}
+  <div id="progress" data-api="{{ url_for('api.get_scan', scan_id=scan['id']) }}">
+    <progress id="bar" max="100" value="{{ scan['progress'] }}">{{ scan['progress'] }}%</progress>
+    <p id="stage" aria-live="polite">Stage: {{ scan['stage'] }}</p>
+    <p class="muted">The page updates automatically. You can leave and come back; the scan keeps running.</p>
+  </div>
+  {% elif scan['status'] == 'failed' %}
+  <div class="flash error">The scan failed: {{ scan['error'] }}</div>
+  {% endif %}
+
+  {% if result %}
+  {% set s = result.summary %}
+  <div class="summary">
+    {% set sc = s.score if s.score is not none else 0 %}
+    <svg class="donut" viewBox="0 0 120 120" role="img" aria-label="Security score {{ s.score if s.score is not none else 'not available' }}">
+      <circle cx="60" cy="60" r="54" class="donut-bg" fill="none" stroke-width="12"/>
+      <circle cx="60" cy="60" r="54" class="donut-fg grade-{{ s.grade[0]|lower if s.grade != 'N/A' else 'na' }}" fill="none" stroke-width="12"
+              stroke-dasharray="{{ (sc * 3.39292)|round(1) }} 339.292" transform="rotate(-90 60 60)"/>
+      <text x="60" y="66" text-anchor="middle" class="donut-text">{{ s.score if s.score is not none else 'N/A' }}</text>
+    </svg>
+    <div>
+      <p class="grade">Grade {{ s.grade }} <span class="muted">({{ s.label }})</span></p>
+      <p>Coverage: {{ s.coverage }}% of applicable checks completed &middot; IP {{ result.ip }}</p>
+      <p>{% for sev, n in s.counts.items() %}{% if n %}<span class="badge sev-{{ sev }}">{{ n }} {{ sev }}</span> {% endif %}{% endfor %}</p>
+      {% for cap in s.caps %}<p class="muted">&#9432; {{ cap }}</p>{% endfor %}
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('web.scan_pdf', scan_id=scan['id']) }}">Download PDF</a>
+    <a class="btn alt" href="{{ url_for('web.scan_json', scan_id=scan['id']) }}">Download JSON</a>
+    <form method="post" action="{{ url_for('web.scan_delete', scan_id=scan['id']) }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="danger">Delete scan</button></form>
+  </div>
+  {% endif %}
+</section>
+
+{% if result %}
+{% set d = result.data %}
+<section class="card">
+  <h2>Findings ({{ result.findings|length }})</h2>
+  {% if not result.findings %}<p class="muted">No findings.</p>{% endif %}
+  {% for f in result.findings %}
+  <details class="finding sev-{{ f.severity }}" {% if f.severity in ('critical', 'high') %}open{% endif %}>
+    <summary><span class="badge sev-{{ f.severity }}">{{ f.severity }}</span> {{ f.title }}
+      {% if f.confidence == 'tentative' %}<span class="tag">tentative</span>{% endif %}</summary>
+    <p>{{ f.description }}</p>
+    {% if f.evidence %}<ul>{% for e in f.evidence %}<li><code>{{ e }}</code></li>{% endfor %}</ul>{% endif %}
+    <p><strong>Fix:</strong> {{ f.remediation }}</p>
+    <p class="muted">{{ f.id }} &middot;
+      <a href="{{ TOP10_URLS.get(f.owasp, '#') }}" rel="noopener noreferrer">{{ f.owasp_name }}</a>
+      {% if f.asvs %}&middot; ASVS {{ f.asvs|join(', ') }}{% endif %}
+      {% for r in f.references %}&middot; <a href="{{ r }}" rel="noopener noreferrer">ref</a>{% endfor %}</p>
+  </details>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>How the score was calculated</h2>
+  {% if s.breakdown %}
+  <table><thead><tr><th>Finding</th><th>Severity</th><th>Confidence</th><th>Points</th></tr></thead><tbody>
+    {% for b in s.breakdown %}<tr><td>{{ b.title }}</td><td><span class="badge sev-{{ b.severity }}">{{ b.severity }}</span></td><td>{{ b.confidence }}</td><td>-{{ b.points }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="muted">No deductions.</p>{% endif %}
+  <p class="muted">Model: critical 30, high 15, medium 7, low 2, info 0 points; tentative findings count half. See docs/SCORING.md.</p>
+</section>
+
+{% if d.ports %}
+<section class="card"><h2>Open ports and services <span class="tag">{{ d.ports.tool }}</span></h2><pre>{{ d.ports.text }}</pre></section>
+{% endif %}
+
+{% if d.http %}
+<section class="card">
+  <h2>HTTP</h2>
+  <p>Final URL: <code>{{ d.http.url }}</code> &middot; status {{ d.http.status }}</p>
+  <div class="scroll"><table><thead><tr><th>Header</th><th>Status</th><th>Value</th></tr></thead><tbody>
+    {% for h in d.http.headers %}<tr><td>{{ h.name }}</td><td><span class="tag {{ h.status }}">{{ h.status }}</span></td><td><code>{{ h.value or '-' }}</code></td></tr>{% endfor %}
+  </tbody></table></div>
+  <h3>Technologies</h3>
+  {% if d.http.technologies %}
+  <div class="scroll"><table><thead><tr><th>Name</th><th>Category</th><th>Version</th><th>Evidence</th></tr></thead><tbody>
+    {% for t in d.http.technologies %}<tr><td>{{ t.name }}</td><td>{{ t.category }}</td><td>{{ t.version or '-' }}</td><td><code>{{ t.evidence }}</code></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<p class="muted">None detected.</p>{% endif %}
+  {% if d.http.paths %}<h3>Paths</h3><ul>{% for p in d.http.paths %}<li><code>{{ p.path }}</code> ({{ p.status }}): {{ p.note }}</li>{% endfor %}</ul>{% endif %}
+</section>
+{% endif %}
+
+{% if d.tls and d.tls.reachable and d.tls.certificate %}
+{% set c = d.tls.certificate %}
+<section class="card">
+  <h2>TLS</h2>
+  <ul>
+    <li>Subject: <code>{{ c.subject }}</code></li><li>Issuer: <code>{{ c.issuer }}</code></li>
+    <li>Valid until {{ c.not_after }} ({{ c.days_remaining }} days left)</li>
+    <li>Key: {{ c.key_type }} {{ c.key_bits or '' }} &middot; signature hash: {{ c.signature_hash or '-' }}</li>
+    <li>Trusted chain: {{ d.tls.trusted }}{% if d.tls.verify_error %} ({{ d.tls.verify_error }}){% endif %} &middot; hostname match: {{ d.tls.hostname_match }}</li>
+    <li>Negotiated: {{ d.tls.negotiated.version }} / {{ d.tls.negotiated.cipher }}</li>
+    <li>Protocols: {% for k, v in d.tls.protocols.items() %}{{ k }}={{ 'yes' if v else ('untested' if v is none else 'no') }}{% if not loop.last %}, {% endif %}{% endfor %}</li>
+    {% if d.tls.untested %}<li class="muted">Cipher families the scanner could not test locally: {{ d.tls.untested|join(', ') }}</li>{% endif %}
+  </ul>
+</section>
+{% endif %}
+
+{% if d.email_auth %}
+<section class="card">
+  <h2>E-mail authentication</h2>
+  <ul>
+    <li>SPF: <code>{{ d.email_auth.spf.record if d.email_auth.spf else 'none' }}</code>{% if d.email_auth.spf %} ({{ d.email_auth.spf.total_lookups }} DNS lookups){% endif %}</li>
+    <li>DMARC: <code>{{ d.email_auth.dmarc.record if d.email_auth.dmarc else 'none' }}</code></li>
+    <li>DKIM selectors found: {{ d.email_auth.dkim_selectors|join(', ') or 'none among the common selectors (inconclusive)' }}</li>
+  </ul>
+</section>
+{% endif %}
+
+{% if d.cve %}
+<section class="card">
+  <h2>CVE correlation (NVD, version-based)</h2>
+  {% for cpe, res in d.cve.items() %}
+  <h3><code>{{ cpe }}</code> &mdash; {{ res.total }} CVEs{% if res.max_cvss %}, max CVSS {{ res.max_cvss }}{% endif %}</h3>
+  {% if res.top %}<ul>{% for c in res.top %}<li><a href="https://nvd.nist.gov/vuln/detail/{{ c.id }}" rel="noopener noreferrer">{{ c.id }}</a> (CVSS {{ c.cvss }}): {{ c.summary }}</li>{% endfor %}</ul>{% endif %}
+  {% endfor %}
+  <p class="muted">Matching is version-based. Linux distributions back-port fixes without changing the version string, so verify before acting.</p>
+</section>
+{% endif %}
+
+{% if d.subdomains is defined %}
+<section class="card">
+  <h2>Subdomains ({{ d.subdomains|length }})</h2>
+  {% if d.subdomains %}<div class="scroll"><table><thead><tr><th>Name</th><th>IPs</th><th>Sources</th></tr></thead><tbody>
+    {% for sub in d.subdomains %}<tr><td>{{ sub.name }}</td><td>{{ sub.ips|join(', ') }}</td><td>{{ sub.sources|join(', ') }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="muted">None found.</p>{% endif %}
+</section>
+{% endif %}
+
+{% if d.dns or d.whois or d.emails %}
+<section class="card">
+  <h2>DNS, WHOIS and e-mails</h2>
+  {% if d.dns %}<pre>{% for t, vals in d.dns.items() %}{{ t }}:
+{% for v in vals %}  - {{ v }}
+{% endfor %}{% endfor %}</pre>{% endif %}
+  {% if d.whois %}<pre>{% for k, v in d.whois.items() %}{{ k }}: {{ v }}
+{% endfor %}</pre>{% endif %}
+  {% if d.emails %}<p>E-mails found: {{ d.emails|join(', ') }}</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Modules</h2>
+  <table><thead><tr><th>Module</th><th>Status</th><th>Time</th><th>Error</th></tr></thead><tbody>
+    {% for name, m in result.modules.items() %}<tr><td>{{ name }}</td><td>{{ m.status }}</td><td>{{ m.seconds }}s</td><td>{{ m.error or '' }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% for n in result.notes %}<p class="muted">Note: {{ n }}</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Targets - WebRecon{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Prove ownership of a target</h1>
+  <p>WebRecon only scans targets you control. Add a domain (or IP), then publish the challenge using <strong>one</strong> method.
+    Verifying a domain also authorises its subdomains for {{ 30 }} days.</p>
+  <form method="post" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="target" placeholder="example.com" required aria-label="Target to verify">
+    <button type="submit">Create challenge</button>
+  </form>
+  <p class="muted">Public practice targets that need no verification: {{ public_targets|join(', ') }}.</p>
+</section>
+{% for it in items %}
+<section class="card">
+  <h2>{{ it.row['target'] }} <span class="tag {{ 'ok' if it.row['status'] == 'verified' else '' }}">{{ it.row['status'] }}</span></h2>
+  {% if it.row['status'] == 'verified' %}
+    <p>Verified by {{ it.row['method'] }}; valid until {{ it.row['expires_at'] }}.</p>
+  {% else %}
+    <p><strong>Option 1: DNS TXT record</strong></p>
+    <pre>Name:  {{ it.how.dns.name }}
+Type:  TXT
+Value: {{ it.how.dns.value }}</pre>
+    <p><strong>Option 2: token file</strong> (served over HTTP or HTTPS)</p>
+    <pre>URL:     {{ it.how.file.url }}
+Content: {{ it.how.file.content }}</pre>
+  {% endif %}
+  <div class="row">
+    {% if it.row['status'] != 'verified' %}
+    <form method="post" action="{{ url_for('web.target_verify', vid=it.row['id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Verify now</button></form>
+    {% endif %}
+    <form method="post" action="{{ url_for('web.target_delete', vid=it.row['id']) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="danger">Remove</button></form>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

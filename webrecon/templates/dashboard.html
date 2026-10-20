@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Scans - WebRecon{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>New scan</h1>
+  <form method="post" action="{{ url_for('web.create_scan') }}" class="row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="target" placeholder="example.com or 203.0.113.10" required aria-label="Target">
+    <button type="submit">Queue scan</button>
+  </form>
+  <p class="muted">Only targets whose ownership you have verified can be scanned (see <a href="{{ url_for('web.targets') }}">Targets</a>).
+    Always allowed for practice: {{ public_targets|join(', ') }}.</p>
+</section>
+<section class="card">
+  <h2>History</h2>
+  {% if scans %}
+  <table>
+    <thead><tr><th>Target</th><th>Status</th><th>Grade</th><th>Score</th><th>Created (UTC)</th><th></th></tr></thead>
+    <tbody>
+    {% for s in scans %}
+      <tr>
+        <td>{{ s['target'] }}</td>
+        <td>{{ s['status'] }}{% if s['status'] in ('queued', 'running') %} ({{ s['progress'] }}%){% endif %}</td>
+        <td>{{ s['grade'] or '-' }}</td><td>{{ s['score'] if s['score'] is not none else '-' }}</td>
+        <td>{{ s['created_at'] }}</td>
+        <td><a href="{{ url_for('web.scan_detail', scan_id=s['id']) }}">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">No scans yet.</p>{% endif %}
+</section>
+{% endblock %}

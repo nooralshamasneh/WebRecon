@@ -1,0 +1,51 @@
+:root{--bg:#0f0c12;--panel:#171320;--line:#3a2a40;--text:#f4e9ee;--muted:#a995a3;--pink:#ff69b4;--pink2:#ff1493;
+--critical:#ff5a5f;--high:#ff8a4c;--medium:#ffc14d;--low:#7ddc8f;--info:#8fb3c7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--pink)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:.8rem 1.5rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font:700 1.4rem "Courier New",monospace;color:var(--pink);text-decoration:none;letter-spacing:2px}
+nav{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+nav a{text-decoration:none}
+.container{max-width:1000px;margin:0 auto;padding:1.5rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.5rem;margin-bottom:1.2rem}
+.card.narrow{max-width:420px;margin:3rem auto}
+h1,h2,h3{font-family:"Courier New",monospace;color:#ff8da1;margin-top:0}
+h1{color:var(--pink)}
+label{display:block;margin-bottom:.8rem}
+input[type=text],input[type=password],select{width:100%;padding:.65rem .8rem;background:#120f18;border:1px solid var(--pink);color:var(--text);border-radius:8px;font:inherit}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.row input[type=text],.row select{flex:1;min-width:220px;width:auto}
+button,.btn{display:inline-block;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;border:0;border-radius:8px;padding:.6rem 1.1rem;font:700 .95rem inherit;cursor:pointer;text-decoration:none}
+.btn.alt{background:linear-gradient(135deg,#c71585,#8b008b)}
+button.danger{background:#7a1f3d}
+button.link{background:none;color:var(--pink);padding:0;text-decoration:underline}
+form.inline{display:inline}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+.scroll{overflow-x:auto}
+pre{background:#0c0a10;border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow-x:auto;white-space:pre-wrap;color:#ff9ebb}
+code{font-family:Consolas,monospace;font-size:.88rem;word-break:break-word}
+.muted{color:var(--muted);font-size:.9rem}
+.flash{padding:.7rem 1rem;border-radius:8px;margin-bottom:1rem;border:1px solid var(--line)}
+.flash.error{border-color:var(--critical);background:#2a1218}
+.flash.info{border-color:var(--pink);background:#241420}
+.badge{display:inline-block;padding:.05rem .5rem;border-radius:999px;font-size:.75rem;font-weight:700;text-transform:uppercase;border:1px solid currentColor}
+.sev-critical{color:var(--critical)}.sev-high{color:var(--high)}.sev-medium{color:var(--medium)}.sev-low{color:var(--low)}.sev-info{color:var(--info)}
+.tag{display:inline-block;padding:0 .45rem;border:1px solid var(--line);border-radius:6px;font-size:.78rem;color:var(--muted)}
+.tag.ok{color:var(--low);border-color:var(--low)}.tag.missing,.tag.leak{color:var(--high)}.tag.weak{color:var(--medium)}
+.finding{border-left:3px solid var(--line);color:var(--text);padding:.4rem .8rem;margin:.6rem 0;background:#130f19;border-radius:0 8px 8px 0}
+.finding.sev-critical{border-left-color:var(--critical)}.finding.sev-high{border-left-color:var(--high)}.finding.sev-medium{border-left-color:var(--medium)}.finding.sev-low{border-left-color:var(--low)}.finding.sev-info{border-left-color:var(--info)}
+.finding .muted{color:var(--muted)}.finding summary{cursor:pointer;color:var(--text)}
+.summary{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+.donut{width:150px;height:150px}
+.donut-bg{stroke:#2c2036}
+.donut-fg{stroke:var(--pink)}
+.donut-fg.grade-a,.donut-fg.grade-b{stroke:var(--low)}.donut-fg.grade-c{stroke:var(--medium)}
+.donut-fg.grade-d{stroke:var(--high)}.donut-fg.grade-f{stroke:var(--critical)}
+.donut-text{fill:var(--text);font:700 28px system-ui}
+.grade{font-size:1.6rem;font-weight:700;margin:0}
+progress{width:100%;height:1rem}
+.foot{text-align:center;color:var(--muted);font-size:.8rem;padding:1.5rem}

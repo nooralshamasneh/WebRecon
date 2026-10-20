@@ -1,0 +1,17 @@
+www
+mail
+ftp
+dev
+test
+admin
+smtp
+webmail
+vpn
+portal
+gemini
+app
+api
+blog
+store
+shop
+panel

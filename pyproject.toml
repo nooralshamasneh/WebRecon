@@ -1,0 +1,22 @@
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "S"]
+ignore = [
+    "E501",  # long lines in regex/signature tables and test fixtures
+    "S101",  # assert is used in tests
+    "S104",  # binding address is configurable
+    "S110", "S112",  # best-effort probes intentionally ignore network errors
+    "S113", "S310",
+    "S324",  # sha256 is used for token lookup, not password hashing
+    "S404", "S405", "S314",  # nmap runs locally and its XML output is trusted
+    "S603", "S607",  # nmap is called with an argument list (no shell) on a validated IP
+    "B904", "B905", "E701", "E702",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+"webrecon/netsafe.py" = ["S501"]  # verify=False is deliberate: certificates are inspected, not trusted
+"webrecon/modules/tls_analysis.py" = ["S501", "S502", "S503", "S504"]
