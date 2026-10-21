@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 
 from webrecon import auth, netsafe, ownership
@@ -101,6 +102,21 @@ class ScanFlowTests(AppTestCase):
         self.assertEqual(data["status"], "failed")
         self.assertIn("kaboom", data["error"])
 
+    def test_heartbeat_is_refreshed_during_a_long_stage(self):
+        seen = {}
+
+        def slow(cfg, db, target, progress):
+            time.sleep(0.4)
+            seen["hb"] = db.one("SELECT heartbeat FROM scans WHERE status='running'")["heartbeat"]
+            return fake_result(target)
+        jobs = self.wr.jobs
+        jobs.runner, jobs.heartbeat_interval = slow, 0.05
+        scan_id = self.post_scan("scanme.nmap.org").get_json()["id"]
+        row = jobs.claim()
+        self.wr.db.execute("UPDATE scans SET heartbeat = 1 WHERE id = ?", (scan_id,))  # looks stale at first
+        jobs.run_one(row)
+        self.assertGreater(seen["hb"], time.time() - 5)  # refreshed by the helper thread, not by a stage start
+
     def test_stale_running_jobs_are_recovered(self):
         scan_id = self.post_scan("scanme.nmap.org").get_json()["id"]
         self.wr.jobs.claim()
@@ -140,7 +156,7 @@ class ScanFlowTests(AppTestCase):
         page = self.client.get(f"/scans/{scan_id}")
         self.assertEqual(page.status_code, 200)
         html = page.get_data(as_text=True)
-        for needle in ["Findings (3)", "A05:2021", "tentative", "How the score was calculated", "TLS", "E-mail authentication", "CVE correlation"]:
+        for needle in ["Findings (3)", "A02:2025", "tentative", "How the score was calculated", "TLS", "E-mail authentication", "CVE correlation"]:
             self.assertIn(needle, html)
         self.assertNotIn("<script>", html)  # CSP: no inline scripts
         for path in ("/", "/targets", "/account", "/compare"):

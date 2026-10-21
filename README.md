@@ -120,8 +120,8 @@ CI runs lint, the tests on Python 3.10-3.13, `pip-audit`, and a Docker build wit
 - TLS protocol and cipher probing depends on what the scanner's local OpenSSL can offer; probes it cannot perform are reported as _untested_, not as "safe".
 - DKIM selectors cannot be enumerated: only common names are tried, so "not found" is inconclusive.
 - Run a single process: queue workers and rate limiters are per process. Put a TLS reverse proxy in front before exposing the app.
-- Mappings use OWASP Top 10 **2021** and ASVS **4.0.3** (constants in `webrecon/findings.py`).
-- Dependencies are pinned in `requirements.lock`, which you generate from a clean environment (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+- Mappings use OWASP Top 10 **2025** and ASVS **4.0.3** (constants in `webrecon/findings.py`).
+- Dependency updates: regenerate `requirements.lock` in a clean virtualenv (on Windows PowerShell use `pip freeze | Set-Content -Encoding ascii requirements.lock`; a plain `>` writes UTF-16).
 
 ## License
 

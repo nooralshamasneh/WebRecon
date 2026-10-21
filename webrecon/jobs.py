@@ -15,12 +15,13 @@ log = logging.getLogger("webrecon.jobs")
 
 
 class JobQueue:
-    def __init__(self, cfg, db, runner, poll=1.0, stale_after=180):
+    def __init__(self, cfg, db, runner, poll=1.0, stale_after=180, heartbeat_interval=15.0):
         self.cfg, self.db, self.runner = cfg, db, runner
-        self.poll, self.stale_after = poll, stale_after
+        self.poll, self.stale_after, self.heartbeat_interval = poll, stale_after, heartbeat_interval
         self._stop = threading.Event()
         self._threads = []
 
+    # -- lifecycle
     def start(self):
         self.recover()
         for i in range(max(1, self.cfg["WORKERS"])):
@@ -33,6 +34,7 @@ class JobQueue:
         for t in self._threads:
             t.join(timeout=5)
 
+    # -- queue operations
     def recover(self):
         """Fail jobs whose worker stopped updating the heartbeat (crash or restart)."""
         cur = self.db.execute(
@@ -52,8 +54,19 @@ class JobQueue:
     def progress(self, scan_id, stage, pct):
         self.db.execute("UPDATE scans SET stage=?, progress=?, heartbeat=? WHERE id=?", (stage, int(pct), time.time(), scan_id))
 
+    def _beat(self, scan_id, stop):
+        """Keep the heartbeat fresh while a long stage (e.g. nmap, up to 240 s) is running."""
+        try:
+            while not stop.wait(self.heartbeat_interval):
+                self.db.execute("UPDATE scans SET heartbeat=? WHERE id=? AND status='running'", (time.time(), scan_id))
+        finally:
+            self.db.close()  # closes this helper thread's own connection
+
     def run_one(self, row):
         scan_id = row["id"]
+        stop = threading.Event()
+        beat = threading.Thread(target=self._beat, args=(scan_id, stop), daemon=True)
+        beat.start()
         try:
             result = self.runner(self.cfg, self.db, row["target"], lambda s, p: self.progress(scan_id, s, p))
             summary = result["summary"]
@@ -64,6 +77,9 @@ class JobQueue:
             log.warning("scan %s failed", scan_id, exc_info=True)
             self.db.execute("UPDATE scans SET status='failed', finished_at=?, error=? WHERE id=?",
                             (utcnow(), f"{type(exc).__name__}: {str(exc)[:300]}", scan_id))
+        finally:
+            stop.set()
+            beat.join(timeout=5)
 
     def _loop(self):
         last_recover = time.monotonic()

@@ -1,3 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "webrecon"
+version = "2.0.0"
+description = "Authorized web reconnaissance and security-posture scanner with OWASP Top 10 mapping"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Noor Alshamasneh" }]
+keywords = ["security", "reconnaissance", "owasp", "scanner", "flask"]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/nooralshamasneh/WebRecon"
+Issues = "https://github.com/nooralshamasneh/WebRecon/issues"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["webrecon*"]
+
+[tool.setuptools.package-data]
+webrecon = ["templates/*.html", "static/*", "data/*"]
+
 [tool.ruff]
 line-length = 140
 target-version = "py310"

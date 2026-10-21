@@ -60,8 +60,7 @@ Scan status values: `queued`, `running`, `completed`, `failed`.
       "title": "Missing Content-Security-Policy",
       "severity": "medium",
       "confidence": "confirmed",
-      "owasp": "A05",
-      "owasp_name": "A05:2021 Security Misconfiguration",
+     "owasp": "A02", "owasp_name": "A02:2025 Security Misconfiguration"
       "asvs": ["V14.4.3"],
       "evidence": [],
       "remediation": "...",

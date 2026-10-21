@@ -13,4 +13,4 @@ python -m ruff check .                                  # lint must be clean
 - New findings go in `webrecon/findings.py` with an OWASP Top 10 mapping, severity, remediation and references,
   then regenerate the docs: `python -m webrecon.findings > docs/OWASP_MAPPING.md`.
 - Never add checks that exploit a target. WebRecon is detection-only.
-- Dependency updates: regenerate `requirements.lock` (`pip freeze > requirements.lock`) in a clean virtualenv.
+- Dependency updates: regenerate `requirements.lock` in a clean virtualenv (on Windows PowerShell use `pip freeze | Set-Content -Encoding ascii requirements.lock`; a plain `>` writes UTF-16).
